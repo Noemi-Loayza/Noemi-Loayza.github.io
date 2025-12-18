@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carmen Noemi Loayza | Portfolio</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <style>
+        /* --- 1. CONFIGURACIÓN BASE & VARIABLES --- */
+        :root {
+            --bg-cream: #F0EBE0;
+            --text-dark: #1A1A1A;
+            --gold-accent: rgba(212, 175, 55, 1);
+            --gold-dim: rgba(212, 175, 55, 0.3);
+            --glass-bg: rgba(240, 235, 224, 0.45);
+            --font-serif: 'Playfair Display', serif;
+            --font-sans: 'Inter', sans-serif;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden; /* Evita scroll en la vista principal */
+            background-color: var(--bg-cream);
+            color: var(--text-dark);
+            font-family: var(--font-sans);
+        }
+
+        /* --- 2. CAPA DE FONDO (CANVAS 3D) --- */
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* --- 3. EFECTOS CINEMÁTICOS (OVERLAYS) --- */
+        
+        /* Grano de película (Film Grain) */
+        .film-grain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 2;
+            opacity: 0.07;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        /* Viñeta (Vignette) para oscurecer esquinas */
+        .vignette {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 3;
+            background: radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(50,30,10,0.4) 100%);
+        }
+
+        /* --- 4. INTERFAZ DE USUARIO (UI) --- */
+        .ui-layer {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 3rem;
+            box-sizing: border-box;
+            pointer-events: none; /* Dejar pasar clicks al 3D si es necesario */
+        }
+
+        /* Header */
+        header {
+            pointer-events: auto;
+            text-align: left;
+        }
+
+        h1 {
+            font-family: var(--font-serif);
+            font-size: 5rem;
+            line-height: 0.9;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: -0.02em;
+            color: #111;
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.1);
+        }
+
+        h1 span {
+            font-style: italic;
+            font-weight: 400;
+            color: #4A4A4A;
+        }
+
+        .subtitle {
+            margin-top: 1rem;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: #8B5A2B; /* Terracotta muted */
+            font-weight: 500;
+            border-top: 1px solid var(--gold-accent);
+            display: inline-block;
+            padding-top: 0.5rem;
+        }
+
+        /* Cards Container */
+        .cards-container {
+            display: flex;
+            gap: 2rem;
+            width: 100%;
+            max-width: 1100px;
+            margin: 0 auto;
+            pointer-events: auto;
+            padding-bottom: 2rem;
+        }
+
+        /* ESTILO: Pergamino Esmerilado (Frosted Parchment) */
+        .card {
+            flex: 1;
+            height: 180px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px) sepia(10%);
+            -webkit-backdrop-filter: blur(12px) sepia(10%);
+            border: 1px solid var(--gold-dim);
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 100%);
+            opacity: 0.3;
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+            background: rgba(240, 235, 224, 0.7);
+            border-color: var(--gold-accent);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        .card-line {
+            width: 30px;
+            height: 2px;
+            background-color: var(--gold-accent);
+            margin-bottom: 1rem;
+            transition: width 0.4s ease;
+        }
+
+        .card:hover .card-line {
+            width: 60px;
+        }
+
+        .card h3 {
+            font-family: var(--font-serif);
+            font-size: 1.8rem;
+            margin: 0;
+            font-weight: 400;
+            color: #222;
+        }
+
+        .card p {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-top: 0.5rem;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.4s ease;
+            color: #666;
+        }
+
+        .card:hover p {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 { font-size: 3rem; }
+            .cards-container { flex-direction: column; height: auto; overflow-y: auto; }
+            .card { height: 120px; }
+            .ui-layer { padding: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="film-grain"></div>
+    <div class="vignette"></div>
+
+    <div id="canvas-container"></div>
+
+    <div class="ui-layer">
+        <header>
+            <h1>Carmen Noemi<br><span>Loayza</span></h1>
+            <div class="subtitle">Artistic & Cinematic Web Experience</div>
+        </header>
+
+        <div class="cards-container">
+            <div class="card">
+                <div class="card-line"></div>
+                <h3>Video Editing</h3>
+                <p>Cinematic Storytelling</p>
+            </div>
+            <div class="card">
+                <div class="card-line"></div>
+                <h3>Art History</h3>
+                <p>Curatorial Projects</p>
+            </div>
+            <div class="card">
+                <div class="card-line"></div>
+                <h3>Marketing - Creador de contenido</h3>
+                <p>Strategic Vision</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. CONFIGURACIÓN DE LA ESCENA ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        // Niebla suave color crema para fundir el fondo
+        scene.fog = new THREE.FogExp2(0xF0EBE0, 0.035);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.z = 6;
+        camera.position.y = 0;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        // Mapeo de tonos para look cinemático
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        container.appendChild(renderer.domElement);
+
+        // --- 2. MATERIALES (Estilo "Art Deco & Marble") ---
+        
+        // Mármol (Sculpture)
+        const marbleMaterial = new THREE.MeshPhysicalMaterial({
+            color: 0xfffaf0,
+            roughness: 0.4,
+            metalness: 0.1,
+            clearcoat: 0.3,
+            clearcoatRoughness: 0.2
+        });
+
+        // Oro (Art Deco)
+        const goldMaterial = new THREE.MeshPhysicalMaterial({
+            color: 0xD4AF37,
+            metalness: 1.0,
+            roughness: 0.15,
+            clearcoat: 1.0
+        });
+
+        // Lente de Cámara (Modern Tech)
+        const lensMaterial = new THREE.MeshPhysicalMaterial({
+            color: 0x111111,
+            metalness: 0.9,
+            roughness: 0.1,
+            transmission: 0.1, // Un poco de vidrio
+            transparent: true
+        });
+
+        // --- 3. CREACIÓN DEL COLLAGE ABSTRACTO 3D ---
+        const collageGroup = new THREE.Group();
+
+        // Elemento A: La "Escultura" (Icosaedro deformado suave)
+        const geometryA = new THREE.IcosahedronGeometry(1.2, 0);
+        const meshA = new THREE.Mesh(geometryA, marbleMaterial);
+        meshA.castShadow = true;
+        meshA.receiveShadow = true;
+        collageGroup.add(meshA);
+
+        // Elemento B: El "Anillo de la Lente"
+        const geometryB = new THREE.TorusGeometry(1.4, 0.05, 16, 100);
+        const meshB = new THREE.Mesh(geometryB, goldMaterial);
+        meshB.rotation.x = Math.PI / 2;
+        meshB.rotation.y = 0.2;
+        collageGroup.add(meshB);
+
+        // Elemento C: "Lente Oscura" (Cilindro interno)
+        const geometryC = new THREE.CylinderGeometry(0.8, 0.8, 0.2, 32);
+        const meshC = new THREE.Mesh(geometryC, lensMaterial);
+        meshC.rotation.z = Math.PI / 2;
+        meshC.position.x = 0.5;
+        collageGroup.add(meshC);
+
+        // Elemento D: Detalles geométricos Art Deco (Esferas doradas flotantes)
+        const sphereGeo = new THREE.SphereGeometry(0.1, 32, 32);
+        const sphere1 = new THREE.Mesh(sphereGeo, goldMaterial);
+        sphere1.position.set(-1.5, 0.5, 0.5);
+        collageGroup.add(sphere1);
+
+        const sphere2 = new THREE.Mesh(sphereGeo, goldMaterial);
+        sphere2.position.set(1.2, -1, 0.2);
+        collageGroup.add(sphere2);
+
+        scene.add(collageGroup);
+
+        // --- 4. PARTÍCULAS DE "POLVO DE ORO" ---
+        const particlesGeometry = new THREE.BufferGeometry();
+        const particlesCount = 300;
+        const posArray = new Float32Array(particlesCount * 3);
+
+        for(let i = 0; i < particlesCount * 3; i++) {
+            posArray[i] = (Math.random() - 0.5) * 10;
+        }
+
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        const particlesMaterial = new THREE.PointsMaterial({
+            size: 0.03,
+            color: 0xD4AF37,
+            transparent: true,
+            opacity: 0.6,
+            blending: THREE.AdditiveBlending
+        });
+
+        const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+        scene.add(particlesMesh);
+
+        // --- 5. ILUMINACIÓN CINEMÁTICA ---
+        
+        // Luz ambiental suave (Warm tone)
+        const ambientLight = new THREE.AmbientLight(0xffecd1, 0.5);
+        scene.add(ambientLight);
+
+        // Spotlight principal (Drama)
+        const spotLight = new THREE.SpotLight(0xffffff, 2);
+        spotLight.position.set(5, 8, 5);
+        spotLight.angle = 0.4;
+        spotLight.penumbra = 0.5;
+        spotLight.castShadow = true;
+        spotLight.shadow.bias = -0.0001;
+        scene.add(spotLight);
+
+        // Luz de rebote dorada (Relleno)
+        const pointLight = new THREE.PointLight(0xD4AF37, 1);
+        pointLight.position.set(-5, -2, -5);
+        scene.add(pointLight);
+
+        // --- 6. ANIMACIÓN Y RENDER LOOP ---
+        
+        // Mouse interaction suave
+        let mouseX = 0;
+        let mouseY = 0;
+        let targetX = 0;
+        let targetY = 0;
+        
+        const windowHalfX = window.innerWidth / 2;
+        const windowHalfY = window.innerHeight / 2;
+
+        document.addEventListener('mousemove', (event) => {
+            mouseX = (event.clientX - windowHalfX) * 0.001;
+            mouseY = (event.clientY - windowHalfY) * 0.001;
+        });
+
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const elapsedTime = clock.getElapsedTime();
+
+            // Rotación hipnótica del collage
+            collageGroup.rotation.y += 0.003;
+            collageGroup.rotation.x = Math.sin(elapsedTime * 0.5) * 0.1;
+
+            // Movimiento flotante
+            collageGroup.position.y = Math.sin(elapsedTime * 0.8) * 0.15;
+
+            // Interactividad del mouse (Smooth)
+            targetX = mouseX * 2;
+            targetY = mouseY * 2;
+            
+            collageGroup.rotation.y += 0.05 * (targetX - collageGroup.rotation.y);
+            collageGroup.rotation.x += 0.05 * (targetY - collageGroup.rotation.x);
+
+            // Animación de partículas (flotar suavemente)
+            particlesMesh.rotation.y = -elapsedTime * 0.05;
+            particlesMesh.position.y = -elapsedTime * 0.02;
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // --- 7. RESPONSIVIDAD ---
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+</html>
