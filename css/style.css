@@ -1,0 +1,174 @@
+:root {
+    --bg-color: #0e0e0e;
+    --text-main: #F0EBE0;
+    --gold: #D4AF37;
+    --glass: rgba(20, 20, 20, 0.65);
+    --font-serif: 'Playfair Display', serif;
+    --font-mono: 'Courier Prime', monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    font-family: var(--font-mono);
+    overflow: hidden; /* IMPORTANTE: JS controla el scroll */
+    height: 100vh;
+    width: 100vw;
+}
+
+/* --- UI Layers --- */
+#canvas-container {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;
+}
+
+.grain-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    opacity: 0.08; pointer-events: none; z-index: 90;
+}
+
+.vignette-overlay {
+    position: fixed; inset: 0;
+    background: radial-gradient(circle, transparent 50%, rgba(0,0,0,0.8) 100%);
+    pointer-events: none; z-index: 91;
+}
+
+.fixed-ui {
+    position: fixed; 
+    top: 0; 
+    left: 0; 
+    width: 100%;
+    padding: 1.5rem 2rem;
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    z-index: 100;
+    text-transform: uppercase; 
+    letter-spacing: 2px; 
+    /*font-size: 0.8rem;*/
+}
+
+/* --- CINTA DE PELÍCULA (SCROLL HORIZONTAL) --- */
+.film-strip-wrapper {
+    display: flex; /* Alinea las secciones horizontalmente */
+    height: 100vh;
+    position: relative;
+    z-index: 10;
+    will-change: transform; /* Optimización para móviles */
+}
+
+.film-frame {
+    width: 100vw; /* Cada sección ocupa el 100% del ancho de pantalla */
+    height: 100vh;
+    flex-shrink: 0; /* Evita que se encojan */
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-right: 8px solid #000; /* Separador de cuadros */
+    background: rgba(10, 10, 10, 0.2);
+}
+
+/* Agujeros del carrete */
+.sprocket-holes {
+    position: absolute; left: 0; width: 100%; height: 24px;
+    background-image: radial-gradient(#000 40%, transparent 42%);
+    background-size: 30px 100%;
+    background-color: rgba(255,255,255,0.05);
+    z-index: 20;
+}
+.sprocket-holes.top { top: 5vh; border-bottom: 2px solid #222; }
+.sprocket-holes.bottom { bottom: 5vh; border-top: 2px solid #222; }
+
+/* --- CONTENIDO --- */
+.content-box {
+    max-width: 800px;
+    padding: 2rem;
+    text-align: center;
+}
+
+.glass-panel {
+    background: var(--glass);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+h1 {
+    font-family: var(--font-serif);
+    font-size: 5rem;
+    line-height: 0.9;
+    margin: 1rem 0;
+}
+
+h2 {
+    font-family: var(--font-serif);
+    font-size: 3rem;
+    color: var(--gold);
+    margin-bottom: 1.5rem;
+}
+
+.gold-text { color: var(--gold); font-style: italic; }
+.meta-text { opacity: 0.5; font-size: 0.7rem; letter-spacing: 3px; margin-bottom: 1rem;}
+.separator-line { width: 50px; height: 2px; background: var(--gold); margin: 2rem auto; }
+
+.skills-list {
+    list-style: none;
+    margin-top: 1.5rem;
+    line-height: 1.8;
+}
+
+.cta-button {
+    display: inline-block;
+    margin-top: 2rem;
+    padding: 1rem 2rem;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    text-decoration: none;
+    transition: all 0.3s;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.cta-button:hover {
+    background: var(--gold);
+    color: #000;
+}
+
+/* UI Fija */
+.fixed-nav {
+    position: fixed; top: 0; width: 100%; z-index: 50;
+    display: flex; justify-content: space-between; padding: 1.5rem 2rem;
+    font-size: 0.9rem; letter-spacing: 1px;
+}
+.blink { animation: blinker 2s linear infinite; color: red; }
+@keyframes blinker { 50% { opacity: 0; } }
+
+/* --- RESPONSIVE MOBILE --- */
+.desktop-hint { display: block; }
+.mobile-hint { display: none; }
+
+@media (max-width: 768px) {
+    h1 { font-size: 3rem; }
+    h2 { font-size: 2rem; }
+
+    .logo{
+        display: none;
+    }
+    
+    .sprocket-holes { height: 15px; background-size: 20px 100%; }
+    .sprocket-holes.top { top: 10px; }
+    .sprocket-holes.bottom { bottom: 10px; }
+    
+    .content-box { width: 90%; padding: 1.5rem; }
+
+    /* Ajuste de navegación para móvil */
+    .fixed-nav { padding: 1rem; font-size: 0.75rem; }
+    
+    /* Mostrar pista de Swipe en móvil */
+    .desktop-hint { display: none; }
+    .mobile-hint { display: block; }
+}
